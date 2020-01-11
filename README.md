@@ -10,7 +10,7 @@ source env3/bin/activate
 pip install flask zappa
 zappa init
 ```
-*NOTE*: Replace _<<bucketname>>_ in the files *app.py* and *pinfo-crawler.yaml*, with the bucketname configured during "zappa init".
+*NOTE*: Replace _\<<bucketname>>_ in the files *app.py* and *pinfo-crawler.yaml*, with the bucketname configured during "zappa init".
 
 
 ## Lambda
