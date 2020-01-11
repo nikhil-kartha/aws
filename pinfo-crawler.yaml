@@ -1,7 +1,7 @@
 
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-# Sample CFN YAML to demonstrate creating a crawler
+# Ref: https://docs.aws.amazon.com/glue/latest/dg/populate-with-cloudformation-templates.html#sample-cfn-template-crawler-s3
 #
 # Parameters section contains names that are substituted in the Resources section
 # These parameters are the names the resources created in the Data Catalog
@@ -15,13 +15,13 @@ Parameters:
     Default: cfn-database-pinfo-2
   CFNTablePrefixName:
     Type: String
-    Default: cfn_sample_1_	
+    Default: cfn_sample_2_	
 #
 #
 # Resources section defines metadata for the Data Catalog
 Resources:
 #Create IAM Role assumed by the crawler. For demonstration, this role is given all permissions.
-  CFNRoleFlights:
+  CFNRolePinfo:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -46,7 +46,7 @@ Resources:
                 Action: "*"
                 Resource: "*"
  # Create a database to contain tables created by the crawler
-  CFNDatabaseFlights:
+  CFNDatabasePinfo:
     Type: AWS::Glue::Database
     Properties:
       CatalogId: !Ref AWS::AccountId
@@ -54,11 +54,11 @@ Resources:
         Name: !Ref CFNDatabaseName
         Description: "AWS Glue container to hold metadata tables for the pinfodata crawler"
  #Create a crawler to crawl the pinfo data in the S3 bucket
-  CFNCrawlerFlights:
+  CFNCrawlerPinfo:
     Type: AWS::Glue::Crawler
     Properties:
       Name: !Ref CFNCrawlerName
-      Role: !GetAtt CFNRoleFlights.Arn
+      Role: !GetAtt CFNRolePinfo.Arn
       #Classifiers: none, use the default classifier
       Description: AWS Glue crawler to crawl pinfo data
       #Schedule: none, use default run-on-demand
