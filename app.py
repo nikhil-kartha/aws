@@ -51,7 +51,9 @@ def index():
 @app.route('/zappa/pinfo', methods=['GET', 'POST'])
 def pinfo():
     data = request.json
-    first_name, middle_name, last_name, zip_code = data.get('first_name',''), data.get('middle_name', ''), data.get('last_name', ''), data.get('zip_code', '')
+    first_name, middle_name, last_name, zip_code, bucketname = data.get('first_name',''), data.get('middle_name', ''), data.get('last_name', ''), data.get('zip_code', ''), data.get('bucketname', '')
+    if not bucketname:
+        bucketname = <<bucketname>>
     if first_name or middle_name or last_name or zip_code:
         csv_out = f'first_name,middle_name,last_name,zip_code\n{first_name},{middle_name},{last_name},{zip_code}'
         write_to_s3(csv_out)
@@ -61,8 +63,7 @@ def pinfo():
         return jsonify({"error": error, "data":data}), 400
 
 
-def write_to_s3(data):
-    bucketname = <<bucketname>>
+def write_to_s3(data, bucketname):
     fname = str(abs(hash(data)))
     date = datetime.datetime.utcnow()
     year, month, day = date.strftime("%Y"), date.strftime("%m"), date.strftime("%d")
