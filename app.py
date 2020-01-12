@@ -2,73 +2,65 @@ from flask import Flask, request, jsonify
 import json
 import boto3
 import datetime
+import userdoc
+from collections import defaultdict
 
 
 app = Flask(__name__)
 
 
-html_doc = """
-<h1> Add user info to S3 </h1>
-
-<h2>Path</h2>
-<bold>/zappa/pinfo</bold>
-
-<h2>Method</h2>
-<bold>POST</bold>
-
-<h2>Parameters</h2>
-Input json should have one of first_name, middle_name, last_name or zip_code
-
-<h2> Success Response </h2>
-<bold> 200: Returns the input json data </bold>
-
-<h2> Error Response </h2>
-<bold> 400: None of the expected json fields are present. </bold>
-
-<h1>Usage</h1>
-
-<h2>Run the following command</h2>
-Note: Replace with appropriate hostname in the following command<br><br>
-<code>
-curl -w "%{http_code}" --header "Content-Type: application/json" \
---request POST \
---data '{"first_name":"nikhil7","middle_name":"narayan5", "last_name":"kartha5","zip_code":"94569"}' \
-https://{hostname}/dev/zappa/pinfo
-</code>
-
-<h2>Sample Output</h2>
-<code>
-{"data":{"first_name":"nikhil7","last_name":"kartha5","middle_name":"narayan5","zip_code":"94569"}}
-</code>
-"""
-
-
 @app.route('/')
 def index():
-    return f"{html_doc}", 200
+    return f"{userdoc.html}", 200
 
 
 @app.route('/zappa/pinfo', methods=['GET', 'POST'])
 def pinfo():
-    data = request.json
-    first_name, middle_name, last_name, zip_code, bucketname = data.get('first_name',''), data.get('middle_name', ''), data.get('last_name', ''), data.get('zip_code', ''), data.get('bucketname', '')
-    if not bucketname:
-        bucketname = <<bucketname>>
-    if first_name or middle_name or last_name or zip_code:
-        csv_out = f'first_name,middle_name,last_name,zip_code\n{first_name},{middle_name},{last_name},{zip_code}'
-        write_to_s3(csv_out)
-        return jsonify({'data': data}), 200
+    data = extract_fields(request.json)
+
+    if valid(data):
+        out = format_output(data, data['ftype'])
+        write_to_s3(out, data['bucketname'], data['ftype'])
+        return jsonify({'data': request.json}), 200
     else:
         error = "Invalid Data. Input json should have one of first_name, middle_name, last_name or zip_code"
-        return jsonify({"error": error, "data":data}), 400
+        return jsonify({"error": error, "data": request.json}), 400
 
 
-def write_to_s3(data, bucketname):
+def extract_fields(data):
+    dd = defaultdict(lambda:"")
+    dd.update(data)
+
+    if not dd['bucketname']:
+        dd['bucketname'] = <<bucketname>>
+    
+    if dd['ftype'] != 'json':
+        dd['ftype'] = 'csv' # default to using csv format
+ 
+    return dd
+
+
+def valid(data):
+    expected_fields = ['first_name', 'middle_name', 'last_name', 'zip_code']
+    return any(data[field] for field in expected_fields)
+
+
+def format_output(data, ftype):
+    if ftype == 'json':
+        out = data
+    else:
+        out = f'first_name,middle_name,last_name,zip_code\n{data["first_name"]},{data["middle_name"]},{data["last_name"]},{data["zip_code"]}'
+
+    return out
+
+
+def write_to_s3(data, bucketname, ftype):
+    prefix = 'pinfodata'
     fname = str(abs(hash(data)))
     date = datetime.datetime.utcnow()
     year, month, day = date.strftime("%Y"), date.strftime("%m"), date.strftime("%d")
     folder = f'year={year}/month={month}/day={day}'
-    path = f'pinfodata/{folder}/{fname}.txt'
+    path = f'{prefix}/{folder}/{fname}.{ftype}'
 
     s3 = boto3.resource('s3')
     s3.Object(bucketname, path).put(Body=data)
