@@ -14,10 +14,9 @@ def index():
     return f"{userdoc.html}", 200
 
 
-@app.route('/zappa/pinfo', methods=['GET', 'POST'])
+@app.route('/zappa/pinfo', methods=['POST'])
 def pinfo():
     data = extract_fields(request.json)
-
     if valid(data):
         out = format_output(data, data['ftype'])
         write_to_s3(out, data['bucketname'], data['ftype'])
